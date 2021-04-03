@@ -1,0 +1,40 @@
+# Repeatable deployment of configurations. Deploys Python, configures SSH printing of the hostkey, and more.
+---
+- hosts: "all"
+  become: yes
+  gather_facts: no
+  user: ubuntu
+  roles:
+    - role: instance.python-install
+      tags:
+        - python
+    - role: instance.disable-dpkg-trigger
+    - role: instance.hostname
+      tags:
+        - hostname
+    - role: instance.print-hostkey
+      tags:
+        - print-hostkey
+    - role: instance.volume
+      tags:
+        - volume
+      when: volume_ignore is not defined
+    - role: instance.packages 
+      tags:
+        - packages
+    - role: instance.automated_updates_disable
+    - role: instance.user-add
+      tags:
+        - users
+    - role: service.systemd-journald
+      tags:
+        - journald
+    # - role: service.prometheus_node_exporter
+    #   tags:
+    #     - prometheus_node_exporter
+    - role: service.docker
+      tags:
+        - docker
+    # - role: service.promtail
+    #   tags:
+    #     - promtail

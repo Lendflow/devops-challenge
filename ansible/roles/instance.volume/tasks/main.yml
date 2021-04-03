@@ -1,0 +1,71 @@
+---
+# tasks file for instance.volume
+- name: Set fact.
+  set_fact:
+    filesystem_dev: "{{ filesystem_dev | default(tags['ebs']) }}"
+
+- name: Debug filesytem_dev.
+  debug:
+    msg: "{{ filesystem_dev }}"
+
+- name: Make the volume mount directory.
+  file:
+    path: "{{ volume_mount }}"
+    state: directory
+
+- name: Set volume_name fact.
+  set_fact:
+    volume_name: "{{ volume_mount | replace('/','') }}"
+
+- name: Debug volume_name fact.
+  debug:
+    msg: "{{ volume_name }}"
+
+- name: Check if uuid is already defined.
+  shell:
+    cmd: cat /etc/systemd/system/{{ volume_name }}.mount | grep uuid || echo "not found"
+  register: uuid_check
+
+- name: Format the filesystem.
+  filesystem:
+    fstype: "{{ filesystem_fstype }}"
+    dev: "{{ filesystem_dev }}"
+  when: uuid_check.stdout is search('not found')
+
+- name: Get the uuid.
+  shell:
+    cmd: ls -alh /dev/disk/by-uuid/ | grep {{ filesystem_dev.split('/')[-1] }} | awk '{ print $9 }'
+  register: uuid
+  when: uuid_check.stdout is search('not found')
+
+- name: Fail if uuid is blank.
+  fail:
+    msg: "Did not find the uuid :("
+  when: uuid_check.stdout is search('not found') and uuid.stdout == ""
+
+- name: Set uuid fact.
+  set_fact:
+    filesystem_uuid: "{{ uuid.stdout }}"
+  when: uuid_check.stdout is search('not found')
+
+- name: Debug.
+  debug:
+    msg: "{{ filesystem_uuid }}"
+  when: uuid_check.stdout is search('not found')
+
+- name: Create systemd mount.
+  template:
+    src: systemd.mount.j2
+    dest: "/etc/systemd/system/{{ volume_name }}.mount"
+  when: uuid_check.stdout is search('not found')
+
+- name: Reload systemd.
+  command: systemctl daemon-reload
+  when: uuid_check.stdout is search('not found')
+
+- name: Mount the drive.
+  service:
+    name: "{{ volume_name }}.mount"
+    enabled: yes
+    state: started
+  when: uuid_check.stdout is search('not found')

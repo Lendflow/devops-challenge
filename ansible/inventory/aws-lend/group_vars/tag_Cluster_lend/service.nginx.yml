@@ -1,0 +1,4 @@
+---
+ignore_ssl_conf: yes
+nginx_config: lend.conf.j2
+nginx_volume_mount:  "{{ volume_mount }}/nginx/data:/var/www/html"

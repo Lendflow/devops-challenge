@@ -1,0 +1,13 @@
+---
+- name: Edit the ForwardToSyslog setting in /etc/systemd/journald.conf (ENABLING FOR WAZUH).
+  lineinfile:
+    path: /etc/systemd/journald.conf
+    regex: ".*ForwardToSyslog.*"
+    line: "ForwardToSyslog=yes"
+  register: journald_conf_forwardtosyslog
+
+- name: Restart systemd-journald if the line has changed.
+  service:
+    name: systemd-journald
+    state: restarted
+  when: journald_conf_forwardtosyslog.changed

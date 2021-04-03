@@ -1,0 +1,44 @@
+---
+- name: Debug instance IDs.
+  debug:
+    msg: "{{ item }}"
+  with_items: "{{ ec2_remote_facts.instances }}"
+  when: debug_instances is defined
+
+# SSH public key section
+- name: Get SSH key from system log.
+  shell: aws ec2 get-console-output \
+           --region {{ region }} \
+           --instance-id {{ item.instance_id }} \
+           --output text | sed -n 's/^.*\(ecdsa-sha2-nistp256 \)\(.*\)/\2/p' | tail -n 1 | awk '{print $1}' | awk '{print substr($0,1,140)}'
+  register: host_key_info
+  with_items: "{{ ec2_remote_facts.instances }}"
+  when: item.tags.Name is defined and wipe is not defined
+
+# - name: Clean all environment created SSH fingerprints.
+#   lineinfile:
+#     dest: "{{ ansible_env.HOME }}/.ssh/known_hosts"
+#     regexp: "^.*#\\s{{ region }} - {{ item.tags.Name.replace(' ','_') }} - ansible generated$"
+#     state: absent
+#   with_items: "{{ ec2_remote_facts.instances }}"
+#   when: item.tags.Name is defined and wipe is not defined
+
+- name: Import SSH public keys.
+  lineinfile:
+    dest: "{{ ansible_env.HOME }}/.ssh/known_hosts"
+    line: "{{ item.0.tags.Name}},{{ item.0.private_dns_name }},{{ item.0.private_ip_address }}{% if item.0.public_ip_address is defined %},{{ item.0.public_ip_address }}{% endif %} ecdsa-sha2-nistp256 {{ item.1.stdout }} # {{ region }} - {{ item.0.tags.Name.replace(' ','_') }} - ansible generated"
+  with_together:
+    - "{{ ec2_remote_facts.instances }}"
+    - "{{ host_key_info.results }}"
+  when: wipe is not defined and item.1.stdout is defined and item.1.stdout != ''
+
+# WIPE section
+- name: WIPE the ~/.ssh/config entries with the marker.
+  command: sed -ie '/# BEGIN {{ region }}.* ansible generated/,+4d' {{ ansible_env.HOME }}/.ssh/config
+  when: wipe is defined and region is defined
+
+- name: WIPE the ~/.ssh/known_hosts entries with the marker.
+  command: sed -ie '/^.*# {{ region }} - {{ item.0.tags.Name.replace(' ','_') }} - ansible generated/d' {{ ansible_env.HOME }}/.ssh/known_hosts
+  with_items: "{{ ec2_remote_facts.instances }}"
+  when: wipe is defined and region is defined
+

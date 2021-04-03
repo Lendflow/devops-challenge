@@ -1,0 +1,10 @@
+**/.terraform
+**/.roles
+*.zip
+**/.*.swp
+**/secrets.tf
+**/__pycache__/
+**/errored.tfstate
+**/options
+**/*.log
+**/*.tgz

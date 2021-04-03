@@ -1,0 +1,27 @@
+---
+- name: Debug facts.
+  debug:
+    msg: |
+      ssh_keyscan_s3_bucket: {{ ssh_keyscan_s3_bucket | default('NOT DEFINED!') }}
+      ssh_keyscan_s3_prefix: {{ ssh_keyscan_s3_prefix }}
+      ssh_keyscan_scrape_method: {{ ssh_keyscan_scrape_method }}
+      region: {{ region }}
+
+- name: Gather instance facts.
+  include_tasks: instance-facts.yml
+
+- name: Configure SSH config.
+  include_tasks: config.yml
+
+- name: Debug our scrape_method.
+  debug:
+    msg: "SSH scrape_method ssh_keyscan_scrape_method is: {{ ssh_keyscan_scrape_method }}"
+
+- name: Run tasks for the scrape_method.
+  include_tasks: "{{ ssh_keyscan_scrape_method }}.yml"
+
+- name: Run the upload.yml tasks.
+  include_tasks: upload.yml
+  when: ssh_upload is defined
+
+

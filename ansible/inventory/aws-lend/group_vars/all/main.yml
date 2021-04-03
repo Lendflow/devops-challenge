@@ -1,0 +1,5 @@
+---
+env: lend
+domain: lend.aws.littlefluffyclouds.io
+region: us-east-1
+volume_mount: /data

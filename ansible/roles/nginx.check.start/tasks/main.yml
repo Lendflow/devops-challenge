@@ -1,0 +1,24 @@
+---
+- name: Start the nginx service.
+  service:
+    name: nginx
+    state: started
+    enabled: yes
+
+- name: Curl port 80 to see if it's running.
+  block:
+    - debug:
+        msg: "{{ inventory_hostname }} checking port..."
+    - name: Using uri to see if our service is running...
+      uri:
+        url: http://localhost:80
+        timeout: 5
+    - debug:
+        msg: "{{ inventory_hostname }} is listening on port 80, should be receiving requests."
+  rescue:
+    - debug:
+        msg: "{{ inventory_hostname }} errored, restarting the nginx service..."
+    - service:
+        name: nginx
+        state: restarted
+        enabled: yes

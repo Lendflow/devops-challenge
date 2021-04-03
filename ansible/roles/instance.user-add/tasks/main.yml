@@ -1,0 +1,82 @@
+---
+
+- name: Create/Manage/Delete user.
+  user:
+    append: "{{ item.append | default(user_append) }}"
+    comment: "{{ item.comment | default(omit) }}"
+    createhome: "{{ item.createhome | default(user_createhome) }}"
+    expires: "{{ item.expires | default(omit) }}"
+    force: "{{ item.force | default(user_force) }}"
+    generate_ssh_key: "{{ item.generate_ssh_key | default(user_generate_ssh_key) }}"
+    group: "{{ item.group | default(omit) }}"
+    groups: "{{ item.groups|join(',') if item.groups is defined else omit }}"
+    home: "{{ item.home | default(omit) }}"
+    login_class: "{{ item.login_class | default(omit) }}"
+    move_home: "{{ item.move_home | default(user_move_home) }}"
+    name: "{{ item.name }}"
+    non_unique: "{{ item.non_unique | default(user_none_unique) }}"
+    password: "{{ item.password | default(omit) }}"
+    remove: "{{ item.remove | default(user_remove) }}"
+    shell: "{{ item.shell | default(user_shell) }}"
+    ssh_key_bits: "{{ item.ssh_key_bits | default(user_ssh_key_bits) }}"
+    ssh_key_comment: "{{ item.ssh_key_comment | default(omit) }}"
+    ssh_key_file: "{{ item.ssh_key_file | default(user_ssh_key_file) }}"
+    ssh_key_passphrase: "{{ item.ssh_key_passphrase | default(omit) }}"
+    ssh_key_type: "{{ item.ssh_key_type | default (omit) }}"
+    state: "{{ item.state | default(user_state) }}"
+    system: "{{ item.system | default(user_system) }}"
+    uid: "{{ item.uid | default(omit) }}"
+    update_password: "{{ item.update_password | default(user_update_password) }}"
+  with_flattened:
+    - "{{ user_list }}"
+    - "{{ user_list_host }}"
+    - "{{ user_list_group }}"
+
+- name: Create the $HOME/.ssh directory.
+  file:
+    path: "{{ item.home | default('/home/' + item.name + '/.ssh') }}"
+    state: directory
+    owner: "{{ item.name }}"
+    group: "{{ item.group | default(item.name) }}"
+  with_flattened:
+    - "{{ user_list }}"
+    - "{{ user_list_host }}"
+    - "{{ user_list_group }}"
+
+- name: Add the SSH key to the ~/.ssh/authorized_keys file.
+  copy:
+    dest: "{{ item.home | default('/home/' + item.name + '/.ssh/authorized_keys') }}"
+    content: "{{ item.ssh_public_key }}"
+    owner: "{{ item.name }}"
+    group: "{{ item.group | default(item.name) }}"
+  when: item.ssh_public_key is defined
+  with_flattened:
+    - "{{ user_list }}"
+    - "{{ user_list_host }}"
+    - "{{ user_list_group }}"
+
+- name: Add the users to the cloud-init sudoers file if item.sudo is defined.
+  lineinfile:
+    path: /etc/sudoers.d/90-cloud-init-users
+    line: "{{ item.name }} ALL=(ALL) NOPASSWD:ALL"
+  when: item.sudo is defined
+  with_flattened:
+    - "{{ user_list }}"
+    - "{{ user_list_host }}"
+    - "{{ user_list_group }}"
+
+- name: Determine available groups
+  getent:
+    database: group
+
+- name: Add users to Docker group if Docker group exists and item.docker is defined.
+  user:
+    name: "{{ item.name }}"
+    groups: docker
+    append: yes
+  when: item.docker is defined and '"docker" in ansible_facts.getent_group'
+  with_flattened:
+    - "{{ user_list }}"
+    - "{{ user_list_host }}"
+    - "{{ user_list_group }}"
+

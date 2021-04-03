@@ -1,0 +1,48 @@
+---
+- name: Debug instance IDs.
+  debug:
+    msg: "{{ item.public_ip_address }}"
+  with_items: "{{ ec2_remote_facts.instances }}"
+  when: debug_instances is defined
+
+- name: Run SSH keyscan against all internal IP addresses.
+  shell:
+    cmd: ssh-keyscan -T 1 {{ item.private_ip_address }} | grep ecdsa-sha2-nistp256 | awk '{ print $NF }'
+  with_items: "{{ ec2_remote_facts.instances }}"
+  register: host_key_info
+
+- name: Run SSH keyscan against all public IP addresses.
+  shell:
+    cmd: ssh-keyscan -T 1 {{ item.public_ip_address }} | grep ecdsa-sha2-nistp256 | awk '{ print $NF }'
+  when: item.public_ip_address is defined and item.public_ip_address != ''
+  with_items: "{{ ec2_remote_facts.instances }}"
+  register: host_key_info_public
+
+- name: Import SSH public keys - PRIVATE/PUBLIC IP.
+  lineinfile:
+    dest: "{{ ansible_env.HOME }}/.ssh/known_hosts"
+    line: "{{ item.0.tags.Name}},{{ item.0.private_dns_name }},{{ item.0.private_ip_address }}{% if item.0.public_ip_address is defined %},{{ item.0.public_ip_address }}{% endif %} ecdsa-sha2-nistp256 {{ item.1.stdout }} # {{ region }} - {{ item.0.tags.Name.replace(' ','_') }} - ansible generated"
+  with_together:
+    - "{{ ec2_remote_facts.instances }}"
+    - "{{ host_key_info.results }}"
+  when: wipe is not defined and item.1.stdout is defined and item.1.stdout != ''
+
+- name: Import SSH public keys - PUBLIC IP.
+  lineinfile:
+    dest: "{{ ansible_env.HOME }}/.ssh/known_hosts"
+    line: "{{ item.0.tags.Name}},{{ item.0.public_ip_address }} ecdsa-sha2-nistp256 {{ item.1.stdout }} # {{ region }} - {{ item.0.tags.Name.replace(' ','_') }} - ansible generated"
+  with_together:
+    - "{{ ec2_remote_facts.instances }}"
+    - "{{ host_key_info_public.results }}"
+  when: wipe is not defined and item.1.stdout is defined and item.1.stdout != ''
+
+# WIPE section
+- name: WIPE the ~/.ssh/config entries with the marker.
+  command: sed -ie '/# BEGIN {{ region }}.* ansible generated/,+4d' {{ ansible_env.HOME }}/.ssh/config
+  when: wipe is defined and region is defined
+
+- name: WIPE the ~/.ssh/known_hosts entries with the marker.
+  command: sed -ie '/^.*# {{ region }} - {{ item.0.tags.Name.replace(' ','_') }} - ansible generated/d' {{ ansible_env.HOME }}/.ssh/known_hosts
+  with_items: "{{ ec2_remote_facts.instances }}"
+  when: wipe is defined and region is defined
+

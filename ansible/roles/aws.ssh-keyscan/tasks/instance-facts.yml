@@ -1,0 +1,8 @@
+---
+- name: Gather EC2 remote facts.
+  ec2_instance_facts:
+    region: "{{ region }}"
+    filters:
+      instance-state-name: running
+  register: ec2_remote_facts
+

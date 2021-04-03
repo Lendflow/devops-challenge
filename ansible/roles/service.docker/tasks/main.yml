@@ -1,0 +1,92 @@
+---
+- name: Only run "update_cache=yes" if the last one is more than 3600 seconds ago.
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Install apt tools.
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - software-properties-common
+
+- name: Check for the fingerprint.
+  shell:
+    cmd: >
+      apt-key fingerprint | grep "9DC8 5822 9FC7 DD38 854A  E2D8 8D81 803C 0EBF CD88" || echo "not found"
+  register: fingerprint
+  changed_when: no
+
+- name: Install the fingerprint if it's not found.
+  shell:
+    cmd: >
+      curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
+  when: fingerprint.stdout is search('not found')
+
+- name: Install the Docker repository.
+  shell:
+    cmd: >
+      add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+  changed_when: no
+
+- name: Create the /etc/docker directory.
+  file:
+    path: /etc/docker
+    state: directory
+
+- name: Template the /etc/docker/daemon.json file.
+  copy:
+    content: |
+      {
+        "storage-driver": "overlay2",
+      {% if docker_data_root is defined %}
+        "data-root": "{{ docker_data_root }}"
+      {% endif %}
+      }
+    dest: /etc/docker/daemon.json
+
+
+- name: Install Docker.
+  apt:
+    name: docker-ce
+    update_cache: yes
+
+- name: Pin Docker using apt-mark.
+  shell:
+    cmd: apt-mark hold docker-ce
+  changed_when: no
+
+- name: Pin Docker using aptitude.
+  shell:
+    cmd: aptitude -y hold docker-ce
+  changed_when: no
+
+- name: Install docker-compose if install_docker_compose is defined.                                                                                                                                                                                            
+  shell:
+    cmd: |
+      curl -L "https://github.com/docker/compose/releases/download/1.25.4/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && chmod a+x /usr/local/bin/docker-compose
+  when: install_docker_compose is defined
+
+- name: Restart the docker service when restart_docker is defined.
+  service:
+    name: docker
+    state: restarted
+    enabled: yes
+  when: restart_docker is defined
+
+- name: Make sure Docker is started.
+  service:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Run docker ps to make sure docker is operational.
+  shell:
+    cmd: docker ps
+
+- name: Create the app docker network.
+  shell:
+    cmd: docker network create app || echo "Network already created"
+

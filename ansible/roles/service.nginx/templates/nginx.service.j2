@@ -1,0 +1,21 @@
+[Unit]
+Description=NGINX HTTPS service.
+After=docker.socket
+
+[Service]
+Type=simple
+Restart=on-failure
+ExecStartPre=-/usr/bin/docker rm nginx
+ExecStart=/usr/bin/docker run --name nginx \
+    --hostname nginx \
+    --net host \
+{% if nginx_volume_mount is defined %}
+    -v {{ nginx_volume_mount }} \
+{% endif %}
+    -v {{ volume_mount }}/nginx/config:/etc/nginx/conf.d \
+    {{ nginx_docker_image }}
+ExecReload=-/usr/bin/docker exec nginx nginx -s reload
+ExecStop=-/usr/bin/docker stop nginx
+
+[Install]
+WantedBy=multi-user.target

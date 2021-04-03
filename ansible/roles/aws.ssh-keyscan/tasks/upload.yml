@@ -1,0 +1,13 @@
+---
+- name: Upload the ssh_keyscan ssh-keyscan files to S3.
+  shell:
+    cmd: aws s3 cp {{ item }} s3://{{ ssh_keyscan_s3_bucket }}/{{ ssh_keyscan_s3_prefix }}/{{ env }}/{{ item.split['/'][-1] }}
+  register: s3_sync
+  with_items:
+    - "{{ ansible_env.HOME }}/.ssh/config"
+    - "{{ ansible_env.HOME }}/.ssh/known_hosts"
+
+- name: Debug s3_sync
+  debug:
+    msg: "{{ s3_sync.results.stdout }}"
+

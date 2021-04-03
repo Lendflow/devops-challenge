@@ -1,0 +1,5 @@
+---
+# ssh_keyscan_s3_bucket:
+ssh_keyscan_s3_prefix: ssh-keyscan
+# ssh_keyscan_scrape_method: aws-system-log
+# region:

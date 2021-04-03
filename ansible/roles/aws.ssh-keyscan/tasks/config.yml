@@ -1,0 +1,41 @@
+---
+# initialization section
+- name: Touch ~/.ssh/config and ~/.ssh/known_hosts (creates them if they don't exist).
+  file:
+    path: "{{ item }}"
+    state: touch
+  with_items:
+    - "{{ ansible_env.HOME }}/.ssh/config"
+    - "{{ ansible_env.HOME }}/.ssh/known_hosts"
+
+# # SSH configuration section
+# - name: Remove previous SSH config settings.
+#   blockinfile:
+#     dest: "{{ ansible_env.HOME }}/.ssh/config"
+#     marker: "# {mark} {{ region }} - {{ item.tags.Name.replace(' ','_') }} - ansible generated"
+#     state: absent
+#   with_items: "{{ ec2_remote_facts.instances }}"
+#   when: item.tags.Name is defined and wipe is not defined
+
+# SSH configuration section
+- name: Configure SSH proxy host.
+  blockinfile:
+    dest: "{{ ansible_env.HOME }}/.ssh/config"
+    marker: "# {mark} {{ region }} - {{ item.tags.Name.replace(' ','_') }} - ansible generated"
+    block: |
+      Host {{ item.tags.Name.replace(' ','_') }}
+        HostName {{ item.private_ip_address }}
+        ServerAliveInterval 30
+  with_items: "{{ ec2_remote_facts.instances }}"
+  when: item.tags.Name is defined and item.private_ip_address and wipe is not defined
+
+- name: Configure SSH proxy host - PUBLIC IP.
+  blockinfile:
+    dest: "{{ ansible_env.HOME }}/.ssh/config"
+    marker: "# {mark} {{ region }} - {{ item.tags.Name.replace(' ','_') }}-public - ansible generated"
+    block: |
+      Host {{ item.tags.Name.replace(' ','_') }}-public
+        HostName {{ item.public_ip_address }}
+        ServerAliveInterval 30
+  with_items: "{{ ec2_remote_facts.instances }}"
+  when: item.tags.Name is defined and item.public_ip_address is defined and wipe is not defined

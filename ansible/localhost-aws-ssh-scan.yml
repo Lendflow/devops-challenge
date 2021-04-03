@@ -1,0 +1,12 @@
+# this playbook does a few things things...
+# - gets a list of AWS instances in a particular region
+# - create an entry in the ~/.ssh/config file for each host (so we can just ssh to 'lend-nginx-01', for instance, and not use the IP address)
+# - runs ssh-keyscan against every private IP address and adds that to the ~/.ssh/known_hosts file
+---
+- hosts: localhost
+  connection: local
+  gather_facts: yes
+  roles:
+    - role: aws.ssh-keyscan
+      # ssh_keyscan_scrape_method: ssh-keyscan
+      ssh_keyscan_scrape_method: aws-system-log

@@ -1,0 +1,11 @@
+[Unit]
+Description=EBS data drive.
+
+[Mount]
+What=/dev/disk/by-uuid/{{ filesystem_uuid }}
+Where={{ volume_mount }}
+Type={{ filesystem_fstype }}
+Options={{ filesystem_options }}
+
+[Install]
+WantedBy=multi-user.target

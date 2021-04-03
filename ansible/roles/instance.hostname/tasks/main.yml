@@ -1,0 +1,11 @@
+---
+- name: Set the hostname to the inventory_hostname variable.
+  hostname:
+    name: "{{ hostname | default(inventory_hostname) }}"
+
+- name: Set the /etc/hosts file.
+  lineinfile:
+    dest: /etc/hosts
+    regexp: '^127\.0\.0\.1[ \t]+localhost'
+    line: "127.0.0.1 localhost {{ inventory_hostname }}"
+    state: present

@@ -1,0 +1,6 @@
+---
+# filesystem_dev: /dev/xvde # MUST BE DEFINED
+filesystem_fstype: ext4
+filesystem_options: defaults,auto,noatime,nodiratime,relatime,nofail
+# volume_name: data
+# volume_mount: /data # MUST BE DEFINED

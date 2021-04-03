@@ -1,0 +1,9 @@
+---
+- hosts: "tag_Cluster_lend"
+  become: yes
+  gather_facts: yes
+  user: ubuntu
+  roles:
+    - role: nginx.check.start
+      tags:
+        - nginx

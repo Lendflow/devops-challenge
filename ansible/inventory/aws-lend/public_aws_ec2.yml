@@ -1,0 +1,17 @@
+---
+plugin: aws_ec2
+compose:
+  ansible_host: public_ip_address
+filters:
+  instance-state-name: running
+  tag:Environment:
+    - lend
+hostnames:
+  - tag:Name
+keyed_groups:
+  - prefix: tag
+    key: tags
+regions:
+  - us-east-1
+
+

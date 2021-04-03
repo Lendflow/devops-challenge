@@ -1,0 +1,8 @@
+---
+- name: Add the polic-rc.d file.
+  copy:
+    content: |
+      #!/bin/bash
+      exit 101
+    dest: /usr/sbin/policy-rc.d
+    mode: '0755'

@@ -1,0 +1,10 @@
+# Repeatable deployment of configurations. Deploys Python, configures SSH printing of the hostkey, and more.
+---
+- hosts: "tag_Cluster_lend"
+  become: yes
+  gather_facts: yes
+  user: ubuntu
+  roles:
+    - role: service.nginx
+      tags:
+        - nginx

@@ -1,0 +1,15 @@
+---
+- name: Install Python.
+  raw: >
+    which python || echo "Python not installed" && apt-get update && apt-get install -y python aptitude
+  register: install_python
+  changed_when: install_python.stdout is search("Python not installed")
+
+- name: Install aptitude.
+  raw: >
+    which aptitude || echo "Aptitude not installed" && apt-get update && apt-get install -y aptitude
+  register: install_apt
+  changed_when: install_apt.stdout is search("Aptitude not installed")
+
+- name: Gather facts.
+  setup:

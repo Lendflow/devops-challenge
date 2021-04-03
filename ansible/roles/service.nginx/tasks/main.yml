@@ -1,0 +1,52 @@
+---
+- name: Make the nginx directories.
+  file:
+    path: "{{ volume_mount }}/nginx/{{ item }}"
+    state: directory
+  with_items:
+    - config
+    - data
+
+- name: Template the nginx content file.
+  template:
+    src: nginx-content.html.j2
+    dest: "{{ volume_mount }}/nginx/data/index.html"
+
+- name: Pull nginx Docker image.
+  shell:
+    cmd: docker pull {{ nginx_docker_image }} | grep Status | tail -n 1
+  register: docker_pull
+  changed_when: docker_pull.stdout is not search('Image is up to date')
+
+- name: Template the configuration file.
+  template:
+      dest: "{{ volume_mount }}/nginx/config/nginx.conf"
+      src: "{{ nginx_config }}"
+
+- name: Template the global SSL configuration.
+  template:
+      dest: "{{ volume_mount }}/nginx/config/ssl.conf"
+      src: ssl.conf.j2
+  when: ignore_ssl_conf is not defined
+
+- name: Template the systemd unit file.
+  template:
+      dest: /etc/systemd/system/nginx.service
+      src: nginx.service.j2
+
+- name: Reload systemd unit file.
+  command: systemctl daemon-reload
+  changed_when: no
+
+- name: Restart nginx when restart_nginx is defined.
+  service:
+    name: nginx
+    state: restarted
+    enabled: yes
+  when: restart_nginx is defined
+
+- name: Start nginx.
+  service:
+    name: nginx
+    state: started
+    enabled: yes

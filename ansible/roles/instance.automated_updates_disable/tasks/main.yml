@@ -1,0 +1,18 @@
+---
+- name: Disable the periodic update package lists.
+  lineinfile:
+    regexp: "^APT::Periodic::Update-Package-List.*;$"
+    line: APT::Periodic::Update-Package-Lists "0";
+    path: /etc/apt/apt.conf.d/10periodic
+
+- name: Disable the periodic update package lists.
+  lineinfile:
+    regexp: "^APT::Periodic::Update-Package-List.*;$"
+    line: APT::Periodic::Update-Package-Lists "0";
+    path: /etc/apt/apt.conf.d/20auto-upgrades
+
+- name: Disable unattended upgrades.
+  lineinfile:
+    regexp: "^APT::Periodic::Unattended-Upgrade.*;$"
+    line: APT::Periodic::Unattended-Upgrade "0";
+    path: /etc/apt/apt.conf.d/20auto-upgrades

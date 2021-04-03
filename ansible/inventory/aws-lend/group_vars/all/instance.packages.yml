@@ -1,0 +1,8 @@
+---
+apt_packages:
+  - unzip
+  - jq
+  - python-pip
+
+# pip_packages:
+#   - awscli
