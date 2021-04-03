@@ -23,7 +23,7 @@ You are required to set up a new EC2 instance in AWS. It must:
 * Provide instructions on how to create the server
 * Provide instructions on deploying the content
 * Provide a script that can be run periodically to check if the server is up and serving the expected content 
-* Alter the README to contain the steps required to:
+* Alter the README to provide user instructions required to:
   * Create the server.
   * Deploy the content.
   * Run the checker script.
